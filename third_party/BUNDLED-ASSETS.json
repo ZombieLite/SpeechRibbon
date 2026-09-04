@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "name": "whisper-bin-x64-v1.9.2.zip",
+      "sizeBytes": 8194445,
+      "sha256": "49DCC16DE826F20BD53D44F947A1AE49DFA81F86CAD67A64D80820CB192D674A"
+    },
+    {
+      "name": "ggml-small-q8_0.bin",
+      "sizeBytes": 264464607,
+      "sha256": "49C8FB02B65E6049D5FA6C04F81F53B867B5EC9540406812C643F177317F779F"
+    },
+    {
+      "name": "ggml-silero-v6.2.0.bin",
+      "sizeBytes": 885098,
+      "sha256": "2AA269B785EEB53A82983A20501DDF7C1D9C48E33AB63A41391AC6C9F7FB6987"
+    },
+    {
+      "name": "ffmpeg-9.0.1-speechribbon-decoder.zip",
+      "sizeBytes": 2642725,
+      "sha256": "2BE0A9CCA855FDE41B7BDF21C6275DD2C60DF2A881907FD3B35953E83E50C83B"
+    },
+    {
+      "name": "bergamot-enru.zip",
+      "sizeBytes": 20642381,
+      "sha256": "C5549053B97172135C0E516F2AC7494C34A0522F5EB20A53A04A3453622D0239"
+    },
+    {
+      "name": "bergamot-jaen.zip",
+      "sizeBytes": 37309315,
+      "sha256": "03769F749AA5E03197326CA4D5B47A04E8824AD5BB9D3126A5CCFBCFA2B1A9C8"
+    },
+    {
+      "name": "third-party-sources.zip",
+      "sizeBytes": 52109061,
+      "sha256": "66C7A4611C5906F4687933E34D68B13F7FDBA9830B4A105FCEAF2B876D96C139"
+    },
+    {
+      "name": "THIRD-PARTY-NOTICES.txt",
+      "sizeBytes": 2566,
+      "sha256": "AEC3FF4E663E20A5C1F58B76733429E1B0DA9D32C8EA37A392C77B93879DFBDF"
+    }
+  ]
+}

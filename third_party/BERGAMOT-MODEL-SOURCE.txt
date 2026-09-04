@@ -1,0 +1,20 @@
+SpeechRibbon English-to-Russian translation assets
+=================================================
+
+Engine: Bergamot Translator v0.4.5, commit 05a87784973b6e1cc591f1f1a9a05c5873d9971e
+Source: https://github.com/browsermt/bergamot-translator/tree/v0.4.5
+License: Mozilla Public License 2.0
+
+Model family: Firefox Translations tiny English-to-Russian
+Metadata: https://github.com/mozilla/firefox-translations-models/tree/main/models/tiny/enru
+Binary source: https://storage.googleapis.com/bergamot-models-sandbox/0.3.3/enru/
+License: Mozilla Public License 2.0
+
+model.enru.intgemm.alphas.bin
+SHA-256: 4A45186A93B8A2DD9301C66A3B3DAD580B1BCFA74AADDA583CA383F9FE0DEA93
+
+lex.50.50.enru.s2t.bin
+SHA-256: 7BD3E2C0A72286FE1F3DA65C56C49A7CD77EFA5F1D1A444E2A9E769480B96FF3
+
+vocab.enru.spm
+SHA-256: FECA2D44F01B946C85FABA3B15B5EB53344BEC84CD14A1A4D4A82DDD774C5EDD

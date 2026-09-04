@@ -1,0 +1,57 @@
+SpeechRibbon third-party notices
+================================
+
+1. whisper.cpp 1.9.2
+   Copyright (c) 2023-2026 The ggml authors
+   License: MIT
+   Source: https://github.com/ggml-org/whisper.cpp/tree/v1.9.2
+
+2. Whisper multilingual model small-q8_0
+   Based on OpenAI Whisper model weights converted to ggml and quantized for whisper.cpp.
+   License: MIT
+   Source and model card: https://huggingface.co/ggerganov/whisper.cpp
+   Model SHA-256: 49C8FB02B65E6049D5FA6C04F81F53B867B5EC9540406812C643F177317F779F
+
+3. Silero VAD 6.2.0 model for whisper.cpp
+   Copyright (c) Silero Team
+   License: MIT
+   Source and model card: https://huggingface.co/ggml-org/whisper-vad/tree/main
+   Model SHA-256: 2AA269B785EEB53A82983A20501DDF7C1D9C48E33AB63A41391AC6C9F7FB6987
+
+4. FFmpeg 9.0.1
+   Copyright (c) 2000-2026 the FFmpeg developers
+   License: GNU Lesser General Public License version 2.1 or later
+   Source: https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz
+   SpeechRibbon uses FFmpeg as a separate child process. The bundled build has network,
+   GPL, nonfree and all general-purpose encoders disabled. Its only enabled encoder is
+   pcm_s16le, used solely to hand decoded samples to the speech recognizer as WAV.
+   The exact configure line and source archive are present in third-party-sources.zip.
+
+5. MinGW-w64 runtime
+   Statically linked portions are covered by the notices included in
+   COPYING.MinGW-w64-runtime.txt inside third-party-sources.zip.
+
+6. Bergamot Translator 0.4.5 and Firefox Translations translation models
+   Copyright Mozilla and contributors
+   License: Mozilla Public License 2.0
+   Sources: https://github.com/browsermt/bergamot-translator/tree/v0.4.5
+            https://github.com/mozilla/firefox-translations-models/tree/main/models/tiny/enru
+            https://github.com/mozilla/firefox-translations-models/tree/main/models/base-memory/jaen
+   Bundled directions: English-to-Russian and Japanese-to-English. The models are
+   stored and executed locally; no translation request leaves the computer.
+
+7. Marian NMT
+   Copyright (c) 2016 Marcin Junczys-Dowmunt and contributors
+   License: MIT
+   Source: bundled with the Bergamot Translator source tree.
+
+8. SentencePiece
+   Copyright 2018 Google Inc.
+   License: Apache License 2.0
+   Source: bundled with the Bergamot Translator source tree.
+
+9. ssplit-cpp and PCRE2 10.39
+   Licenses: Apache License 2.0 (ssplit-cpp) and BSD-style PCRE2 licence
+   Sources: bundled with the Bergamot Translator source tree.
+
+No network service, cloud model, telemetry SDK or updater is included.

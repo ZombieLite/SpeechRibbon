@@ -1,0 +1,37 @@
+# Build output
+**/bin/
+**/obj/
+/build/
+/artifacts/
+
+# Local media files
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.aac
+*.ogg
+*.oga
+*.opus
+*.wma
+*.mp4
+*.m4v
+*.mov
+*.mkv
+*.webm
+*.avi
+*.wmv
+
+# Local toolchains and IDE state
+/tools/w64devkit-*/
+/.vs/
+/.idea/
+.vscode/
+*.user
+*.suo
+*.pdb
+*.log
+*.tmp
+*.bak
+Thumbs.db
+Desktop.ini

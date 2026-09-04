@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>embedded</DebugType>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <AssemblyName>SpeechRibbon</AssemblyName>
+    <RootNamespace>SpeechRibbon</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\SpeechRibbon.ico</ApplicationIcon>
+    <BundleThirdParty Condition="'$(BundleThirdParty)' == ''">false</BundleThirdParty>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\SpeechRibbon.png" />
+    <Resource Include="Assets\SpeechRibbon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\third_party\bundled\whisper-bin-x64-v1.9.2.zip"
+                      LogicalName="SpeechRibbon.Assets.whisper.zip"
+                      Condition="'$(BundleThirdParty)' == 'true'" />
+    <EmbeddedResource Include="..\..\third_party\bundled\ggml-small-q8_0.bin"
+                      LogicalName="SpeechRibbon.Assets.model.bin"
+                      Condition="'$(BundleThirdParty)' == 'true'" />
+    <EmbeddedResource Include="..\..\third_party\bundled\ggml-silero-v6.2.0.bin"
+                      LogicalName="SpeechRibbon.Assets.vad.bin"
+                      Condition="'$(BundleThirdParty)' == 'true'" />
+    <EmbeddedResource Include="..\..\third_party\bundled\ffmpeg-9.0.1-speechribbon-decoder.zip"
+                      LogicalName="SpeechRibbon.Assets.ffmpeg.zip"
+                      Condition="'$(BundleThirdParty)' == 'true'" />
+    <EmbeddedResource Include="..\..\third_party\bundled\bergamot-enru.zip"
+                      LogicalName="SpeechRibbon.Assets.translator.zip"
+                      Condition="'$(BundleThirdParty)' == 'true'" />
+    <EmbeddedResource Include="..\..\third_party\bundled\bergamot-jaen.zip"
+                      LogicalName="SpeechRibbon.Assets.translator.jaen.zip"
+                      Condition="'$(BundleThirdParty)' == 'true'" />
+    <EmbeddedResource Include="..\..\third_party\bundled\third-party-sources.zip"
+                      LogicalName="SpeechRibbon.Assets.sources.zip"
+                      Condition="'$(BundleThirdParty)' == 'true' and Exists('..\..\third_party\bundled\third-party-sources.zip')" />
+    <EmbeddedResource Include="..\..\third_party\THIRD-PARTY-NOTICES.txt"
+                      LogicalName="SpeechRibbon.Assets.notices.txt"
+                      Condition="'$(BundleThirdParty)' == 'true' and Exists('..\..\third_party\THIRD-PARTY-NOTICES.txt')" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SpeechRibbon.Tests" />
+  </ItemGroup>
+</Project>

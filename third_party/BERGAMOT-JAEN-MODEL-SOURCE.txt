@@ -1,0 +1,16 @@
+SpeechRibbon Japanese-to-English translation assets
+===================================================
+
+Model family: Firefox Translations base-memory Japanese-to-English 2.1
+Registry: https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/translations-models/records
+Project source and metadata: https://github.com/mozilla/firefox-translations-models/tree/main/models/base-memory/jaen
+License: Mozilla Public License 2.0
+
+model.jaen.intgemm.alphas.bin
+SHA-256: 3A603E20BFE1BE86071913F9E23AB5129075BC0A8490151020AC4821E4F17302
+
+lex.50.50.jaen.s2t.bin
+SHA-256: 525F412F0D210536C2933C78AE395FA0BF2B5EE6CC5DDA61EBC2E79410EBAEE4
+
+vocab.jaen.spm
+SHA-256: 5CB217758BAE05877BB3F0C2F612E4E7C1E4CB03C10DB11F4A47098D7AE62919

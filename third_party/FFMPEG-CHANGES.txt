@@ -1,0 +1,5 @@
+FFmpeg source changes: none.
+
+SpeechRibbon builds unmodified FFmpeg 9.0.1 source with the exact configure options
+recorded in BUILD-CONFIGURATION.txt. The build is statically linked and used only as a
+temporary child process for probing media and decoding one selected audio track to PCM.

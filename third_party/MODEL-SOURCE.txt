@@ -1,0 +1,5 @@
+Model: ggml-small-q8_0.bin
+Repository: https://huggingface.co/ggerganov/whisper.cpp
+Size: 264464607 bytes
+SHA-256: 49C8FB02B65E6049D5FA6C04F81F53B867B5EC9540406812C643F177317F779F
+License stated by the model repository: MIT

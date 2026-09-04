@@ -1,0 +1,16 @@
+* text=auto
+*.cs text eol=crlf
+*.xaml text eol=crlf
+*.ps1 text eol=crlf
+*.c text eol=lf
+*.rc text eol=crlf
+*.md text eol=lf
+*.json text eol=lf
+*.txt text eol=lf
+
+*.png binary
+*.ico binary
+
+dist/*.exe filter=lfs diff=lfs merge=lfs -text
+third_party/bundled/*.zip filter=lfs diff=lfs merge=lfs -text
+third_party/bundled/*.bin filter=lfs diff=lfs merge=lfs -text
