@@ -1,4 +1,11 @@
 # Build output
+# Local connection settings contain the user's API key.
+SpeechRibbon.settings.json
+SpeechRibbon.settings.json.*
+.env
+.env.*
+!.env.example
+
 **/bin/
 **/obj/
 /build/

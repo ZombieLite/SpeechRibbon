@@ -72,14 +72,29 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="FontSize" Value="12" />
-      <Setter Property="FontFamily" Value="Segoe Fluent Icons" />
+
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border x:Name="WindowButtonBorder" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Path x:Name="CaptionIcon" Width="12" Height="12" Data="M 1,6 L 11,6" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
             </Border>
             <ControlTemplate.Triggers>
+              <Trigger Property="Tag" Value="Maximize">
+                <Setter TargetName="CaptionIcon" Property="Data" Value="M 1,1 L 11,1 11,11 1,11 Z"/>
+                <Setter Property="ToolTip" Value="Развернуть"/>
+              </Trigger>
+              <Trigger Property="Tag" Value="Close">
+                <Setter TargetName="CaptionIcon" Property="Data" Value="M 1,1 L 11,11 M 11,1 L 1,11"/>
+              </Trigger>
+              <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                  <Condition Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Maximize"/>
+                  <Condition Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="Maximized"/>
+                </MultiDataTrigger.Conditions>
+                <Setter TargetName="CaptionIcon" Property="Data" Value="M 4,4 L 4,1 11,1 11,8 8,8 M 1,4 L 8,4 8,11 1,11 Z"/>
+                <Setter Property="ToolTip" Value="Восстановить"/>
+              </MultiDataTrigger>
               <Trigger Property="IsMouseOver" Value="True">
                 <Setter TargetName="WindowButtonBorder" Property="Background" Value="{DynamicResource WindowButtonHoverBrush}" />
               </Trigger>

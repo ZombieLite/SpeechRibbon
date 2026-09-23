@@ -24,6 +24,7 @@ public partial class MainWindow : Window
         _workspace = workspace;
         _pipeline = new TranscriptionPipeline(workspace);
         VersionText.Text = RuntimeWorkspace.Version;
+        InitializeAi();
         FilePathBox.AddHandler(DragDrop.PreviewDragOverEvent, new DragEventHandler(FileArea_DragOver), true);
         FilePathBox.AddHandler(DragDrop.PreviewDropEvent, new DragEventHandler(FileArea_Drop), true);
     }
@@ -64,6 +65,8 @@ public partial class MainWindow : Window
         SetBusy(true, "Проверка файла", "Читаю контейнер и аудиодорожки…");
         try
         {
+            InvalidateAiDocument();
+            _document = null; SegmentsGrid.ItemsSource = null; EmptyResultText.Visibility = Visibility.Visible;
             _media = await _pipeline.InspectAsync(path, CancellationToken.None);
             FilePathBox.Text = path;
             FileInfoText.Text = $"{_media.Duration:hh\\:mm\\:ss} · {new FileInfo(path).Length / 1_048_576d:F1} МБ · аудиодорожек: {_media.AudioTracks.Count}";
@@ -89,6 +92,7 @@ public partial class MainWindow : Window
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
         if (_media is null || TrackBox.SelectedItem is not AudioTrack track) return;
+        InvalidateAiDocument();
         _workCancellation = new CancellationTokenSource();
         SetBusy(true, "Подготовка аудио", "Проверяю ресурсы и декодирую выбранную дорожку…");
         CancelButton.IsEnabled = true;
@@ -106,13 +110,13 @@ public partial class MainWindow : Window
         });
         try
         {
-            var outputMode = TranslateRussianMode.IsChecked == true
+            var outputMode = OutputModeBox.SelectedIndex == 1
                 ? OutputMode.TranslateRussian
-                : TranslateEnglishMode.IsChecked == true ? OutputMode.TranslateEnglish : OutputMode.Transcribe;
+                : OutputModeBox.SelectedIndex == 2 ? OutputMode.TranslateEnglish : OutputMode.Transcribe;
             _document = await _pipeline.RunAsync(_media, track, "auto", outputMode, progress, _workCancellation.Token);
             SegmentsGrid.ItemsSource = _document.Segments;
             EmptyResultText.Visibility = _document.Segments.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
-            ResultHeading.Text = $"Результат · язык: {_document.DetectedLanguage}" + (_document.HasUncertainOverlap ? " · есть неуверенное наложение" : "");
+            ResultHeading.Text = $"Язык: {_document.DetectedLanguage}" + (_document.HasUncertainOverlap ? "; есть неуверенное наложение" : "");
             CopyButton.IsEnabled = SaveButton.IsEnabled = _document.Segments.Count > 0;
             _hasUnsavedResult = _document.Segments.Count > 0;
             StatusTitle.Text = "Готово";
@@ -144,6 +148,7 @@ public partial class MainWindow : Window
 
     private void Copy_Click(object sender, RoutedEventArgs e)
     {
+        if (AiTab.IsChecked == true) { ExportAi(false); return; }
         if (_document is null) return;
         Clipboard.SetText(TranscriptExporter.ToText(_document));
         StatusDetail.Text = "Результат скопирован в буфер обмена.";
@@ -152,6 +157,7 @@ public partial class MainWindow : Window
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         if (_document is null) return;
+        if (AiTab.IsChecked == true) { ExportAi(true); return; }
         var dialog = new SaveFileDialog { Title = "Сохранить результат", Filter = "Текст (*.txt)|*.txt|SubRip (*.srt)|*.srt|WebVTT (*.vtt)|*.vtt", AddExtension = true, OverwritePrompt = true, FileName = "transcript.txt" };
         if (dialog.ShowDialog(this) != true) return;
         var text = Path.GetExtension(dialog.FileName).ToLowerInvariant() switch { ".srt" => TranscriptExporter.ToSrt(_document), ".vtt" => TranscriptExporter.ToVtt(_document), _ => TranscriptExporter.ToText(_document) };
@@ -166,13 +172,15 @@ public partial class MainWindow : Window
         ChooseFileButton.IsEnabled = !busy;
         StartButton.IsEnabled = !busy && _media is not null;
         TrackBox.IsEnabled = !busy && (_media?.AudioTracks.Count ?? 0) > 1;
-        TranscribeMode.IsEnabled = TranslateRussianMode.IsEnabled = TranslateEnglishMode.IsEnabled = !busy;
+        OutputModeBox.IsEnabled = !busy;
+        RenderAi();
         if (title is not null) StatusTitle.Text = title;
         if (detail is not null) StatusDetail.Text = detail;
     }
 
     private void SegmentsGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
+        if (e.EditAction == DataGridEditAction.Commit) InvalidateAiRequest();
         if (e.EditAction != DataGridEditAction.Commit || e.Column.DisplayIndex != 1 || e.Row.Item is not TranscriptSegment segment) return;
         if (e.EditingElement is TextBox editor) segment.Speaker = SpeakerNames.Normalize(editor.Text);
     }
@@ -190,8 +198,6 @@ public partial class MainWindow : Window
     private void ToggleMaximize()
     {
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-        MaximizeButton.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
-        MaximizeButton.ToolTip = WindowState == WindowState.Maximized ? "Восстановить" : "Развернуть";
     }
 
     private void Window_Closing(object? sender, CancelEventArgs e)
@@ -202,5 +208,6 @@ public partial class MainWindow : Window
             _workCancellation.Cancel();
         }
         if (_hasUnsavedResult && MessageBox.Show(this, "Результат не сохранён. Закрыть программу?", "SpeechRibbon", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) e.Cancel = true;
+        if (!e.Cancel) { InvalidateAiRequest(); _probeCancellation?.Cancel(); _aiClient.Dispose(); }
     }
 }
