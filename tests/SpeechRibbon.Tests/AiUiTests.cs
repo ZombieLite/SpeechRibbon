@@ -59,6 +59,14 @@ internal static class AiUiTests
                 Call("EditPrompt_Click"); root.UpdateLayout();
                 var send = Control<Button>("SendPromptButton");
                 check(send.TransformToAncestor(root).Transform(new Point(0, send.ActualHeight)).Y <= root.ActualHeight, "UI send button stays within window");
+                Call("OpenConnection_Click");
+                var status = Control<TextBox>("ConnectionStatus");
+                status.Text = "HTTP 422. " + new string('я', 1200);
+                root.UpdateLayout();
+                var save = Control<Button>("SaveConnectionButton");
+                check(status.IsReadOnly && save.TransformToAncestor(root).Transform(new Point(0, save.ActualHeight)).Y <= root.ActualHeight,
+                    "UI long copyable error keeps settings buttons visible");
+                Call("CloseConnection_Click");
                 Call("InvalidateAiDocument");
                 check(!Control<Button>("CopyButton").IsEnabled, "UI document change clears old AI answer");
                 var oldClient = (AiClient)typeof(MainWindow).GetField("_aiClient", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;

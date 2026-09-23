@@ -57,7 +57,16 @@ internal sealed class AiSettingsStore(string path)
 internal sealed class AiClient : IDisposable
 {
     private readonly HttpClient client;
-    public AiClient(HttpMessageHandler? handler = null) => client = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = Timeout.InfiniteTimeSpan };
+    public AiClient(HttpMessageHandler? handler = null)
+    {
+        client = new HttpClient(handler ?? CreateHandler()) { Timeout = Timeout.InfiniteTimeSpan };
+    }
+    internal static HttpClientHandler CreateHandler()
+    {
+        var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+        return handler;
+    }
     public async Task<string> CompleteAsync(AiSettings settings, string prompt, string transcript, CancellationToken cancellation, bool probe = false)
     {
         var endpoint = settings.Endpoint();
@@ -73,15 +82,20 @@ internal sealed class AiClient : IDisposable
         try
         {
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-            if (!response.IsSuccessStatusCode) throw new AiConnectionException(response.StatusCode switch {
+            if (!response.IsSuccessStatusCode)
+            {
+                var explanation = response.StatusCode switch {
                 HttpStatusCode.Unauthorized => "Сервер не принял API-ключ. Проверь ключ в настройках.",
                 HttpStatusCode.Forbidden => "Сервер запретил доступ. Проверь права ключа и доступ к модели.",
                 HttpStatusCode.NotFound => "Не найден адрес API или модель. Проверь Base URL и название модели.",
                 HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => "Сервер отклонил запрос. Проверь модель и допустимый объём текста.",
                 HttpStatusCode.RequestEntityTooLarge => "Текст превышает лимит сервера. Он не был обрезан.",
                 HttpStatusCode.TooManyRequests => "Слишком много запросов или исчерпан лимит. Повтори позже.",
-                _ => "Сервер не выполнил запрос. Код HTTP: " + (int)response.StatusCode + "."
-            });
+                _ => "Сервер не выполнил запрос."
+                };
+                var detail = await ReadErrorAsync(response, settings, prompt, transcript, timeout.Token);
+                throw new AiConnectionException($"HTTP {(int)response.StatusCode}. {explanation}" + (detail.Length > 0 ? "\nСообщение сервера: " + detail : "\nСервер не предоставил безопасное описание ошибки в JSON."));
+            }
             if (response.Content.Headers.ContentLength > 8 * 1024 * 1024) throw new AiConnectionException("Ответ сервера слишком большой.");
             await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
             using var output = new MemoryStream(); var buffer = new byte[8192];
@@ -98,8 +112,52 @@ internal sealed class AiClient : IDisposable
             return answer;
         }
         catch (OperationCanceledException) when (!cancellation.IsCancellationRequested) { throw new AiConnectionException("Сервер не ответил за отведённое время. Можно повторить запрос."); }
-        catch (HttpRequestException) { throw new AiConnectionException("Не удалось связаться с сервером. Проверь адрес, корпоративную сеть и сертификат сервера."); }
+        catch (HttpRequestException e) { throw new AiConnectionException(e.HttpRequestError switch {
+            HttpRequestError.SecureConnectionError => "Не удалось установить соединение TLS. Проверка подлинности сертификата отключена; проверь поддержку TLS на сервере и сетевом шлюзе.",
+            HttpRequestError.NameResolutionError => "Не удалось определить адрес сервера. Проверь Base URL, DNS и подключение к корпоративной сети.",
+            HttpRequestError.ConnectionError => "Не удалось подключиться к серверу. Проверь адрес, порт и доступность корпоративной сети.",
+            _ => "Не удалось выполнить сетевой запрос. Проверь адрес сервера и подключение к сети."
+        }); }
         catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException) { throw new AiConnectionException("Ответ сервера не соответствует формату Chat Completions."); }
+    }
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response, AiSettings settings, string prompt, string transcript, CancellationToken cancellation)
+    {
+        // Never display raw HTML, request dumps or an unbounded response body.
+        const int limit = 16384;
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellation);
+        using var body = new MemoryStream();
+        var buffer = new byte[4096];
+        int read;
+        while ((read = await stream.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, limit + 1 - (int)body.Length)), cancellation)) > 0)
+        {
+            body.Write(buffer, 0, read);
+            if (body.Length > limit) return "";
+        }
+        try
+        {
+            using var json = JsonDocument.Parse(body.ToArray());
+            var root = json.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return "";
+            var error = root.TryGetProperty("error", out var nested) ? nested : root;
+            string text = "";
+            if (error.ValueKind == JsonValueKind.String) text = error.GetString() ?? "";
+            else if (error.ValueKind == JsonValueKind.Object && error.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String) text = message.GetString() ?? "";
+            else if (root.TryGetProperty("detail", out var detail))
+            {
+                if (detail.ValueKind == JsonValueKind.String) text = detail.GetString() ?? "";
+                else if (detail.ValueKind == JsonValueKind.Array)
+                    text = string.Join("; ", detail.EnumerateArray().Take(3).Where(x => x.ValueKind == JsonValueKind.Object && x.TryGetProperty("msg", out var m) && m.ValueKind == JsonValueKind.String).Select(x => x.GetProperty("msg").GetString()));
+            }
+            foreach (var sensitive in new[] { settings.ApiKey, settings.ApiKey.Trim(), prompt, transcript }.Where(x => !string.IsNullOrEmpty(x)).OrderByDescending(x => x.Length))
+                text = text.Replace(sensitive, "[скрыто]", StringComparison.Ordinal);
+            // Also redact individual source lines if the server quotes only part of a request.
+            foreach (var line in (prompt + "\n" + transcript).Split('\n').Select(x => x.Trim()).Where(x => x.Length >= 8).OrderByDescending(x => x.Length))
+                text = text.Replace(line, "[скрыто]", StringComparison.Ordinal);
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"(?i)\bBearer\s+\S+", "Bearer [скрыто]");
+            text = new string(text.Where(c => !char.IsControl(c) || c == '\n').ToArray()).Trim();
+            return text.Length > 1200 ? text[..1200] + "…" : text;
+        }
+        catch (JsonException) { return ""; }
     }
     public void Dispose() => client.Dispose();
 }

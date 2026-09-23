@@ -9,12 +9,35 @@ internal static class AiTests
     public static async Task Run(Action<bool, string> check)
     {
         await Loopback(check);
+        await TlsLoopback(check);
         var settings = new AiSettings { BaseUrl = "https://example.invalid/v1", ApiKey = "synthetic-secret", Model = "test-model" };
         check(settings.Endpoint().AbsoluteUri == "https://example.invalid/v1/chat/completions", "AI base URL preserves v1 without duplication");
         settings.BaseUrl = "https://example.invalid";
         check(settings.Endpoint().AbsolutePath == "/v1/chat/completions", "AI root URL defaults to v1");
         settings.BaseUrl = "https://example.invalid/custom/v1/";
         check(settings.Endpoint().AbsolutePath == "/custom/v1/chat/completions", "AI custom API prefix preserved");
+        using (var transport = AiClient.CreateHandler())
+            check(!transport.AllowAutoRedirect, "AI certificate bypass does not enable redirects");
+        foreach (var sample in new[] {
+            (400, "{\"error\":{\"message\":\"Unknown model test-model\"}}", "Unknown model test-model"),
+            (422, "{\"detail\":[{\"msg\":\"Field required: messages\",\"input\":\"PRIVATE_SOURCE\"}]}", "Field required: messages"),
+            (400, "{\"error\":{\"message\":\"synthetic-secret PRIVATE_SOURCE PRIVATE_PROMPT\"}}", "[скрыто]"),
+            (502, "<html>PRIVATE_SOURCE</html>", "JSON"),
+            (400, "{\"error\":{\"message\":\"" + new string('z', 17000) + "\"}}", "JSON")
+        })
+        {
+            using var client = new AiClient(new Handler((_, _) => Task.FromResult(new HttpResponseMessage((HttpStatusCode)sample.Item1) { Content = new StringContent(sample.Item2) })));
+            try { await client.CompleteAsync(settings, "PRIVATE_PROMPT", "PRIVATE_SOURCE", default); check(false, "AI error expected"); }
+            catch (AiConnectionException e) {
+                check(e.Message.Contains("HTTP " + sample.Item1) && e.Message.Contains(sample.Item3), "AI HTTP status and structured server detail");
+                check(!e.Message.Contains(settings.ApiKey) && !e.Message.Contains("PRIVATE_SOURCE") && !e.Message.Contains("PRIVATE_PROMPT"), "AI error details redact request data");
+            }
+        }
+        using (var client = new AiClient(new Handler((_, _) => throw new HttpRequestException(HttpRequestError.SecureConnectionError, "private certificate detail"))))
+        {
+            try { await client.CompleteAsync(settings, "", "", default); check(false, "AI TLS error expected"); }
+            catch (AiConnectionException e) { check(e.Message.Contains("TLS") && !e.Message.Contains("private"), "AI TLS failure distinguished from HTTP refusal"); }
+        }
         var longText = "Начало " + new string('я', 100000) + " КОНЕЦ";
         using (var client = new AiClient(new Handler(async (request, token) => {
             check(request.Method == HttpMethod.Post && request.Headers.Authorization?.Scheme == "Bearer" && request.Headers.Authorization.Parameter == settings.ApiKey, "AI authorization and method");
@@ -60,6 +83,34 @@ internal static class AiTests
         } finally { Directory.Delete(folder, true); }
     }
     private static HttpResponseMessage Json(string value) => new(HttpStatusCode.OK) { Content = new StringContent(value, Encoding.UTF8, "application/json") };
+    private static async Task TlsLoopback(Action<bool, string> check)
+    {
+        using var key = System.Security.Cryptography.RSA.Create(2048);
+        var request = new System.Security.Cryptography.X509Certificates.CertificateRequest("CN=wrong-host.invalid", key, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+        using var generated = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-2), DateTimeOffset.UtcNow.AddDays(-1));
+        using var certificate = new System.Security.Cryptography.X509Certificates.X509Certificate2(generated.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pfx));
+        using var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var server = Task.Run(async () => {
+            using var socket = await listener.AcceptTcpClientAsync(deadline.Token);
+            await using var stream = new System.Net.Security.SslStream(socket.GetStream());
+            await stream.AuthenticateAsServerAsync(new System.Net.Security.SslServerAuthenticationOptions { ServerCertificate = certificate }, deadline.Token);
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            var first = await reader.ReadLineAsync(deadline.Token);
+            int size = 0; string? line;
+            while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync(deadline.Token)))
+                if (line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase)) size = int.Parse(line.Split(':')[1]);
+            var body = new char[size]; await reader.ReadBlockAsync(body.AsMemory(), deadline.Token);
+            var response = Encoding.UTF8.GetBytes("{\"choices\":[{\"message\":{\"content\":\"TLS OK\"}}]}");
+            await stream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {response.Length}\r\nConnection: close\r\n\r\n"), deadline.Token);
+            await stream.WriteAsync(response, deadline.Token);
+            return first == "POST /v1/chat/completions HTTP/1.1";
+        });
+        using var client = new AiClient();
+        var settings = new AiSettings { BaseUrl = "https://127.0.0.1:" + ((IPEndPoint)listener.LocalEndpoint).Port, ApiKey = "synthetic", Model = "user-model" };
+        check(await client.CompleteAsync(settings, "", "", deadline.Token, true) == "TLS OK" && await server, "AI accepts untrusted expired wrong-host certificate without system changes");
+    }
     private static async Task Loopback(Action<bool, string> check)
     {
         using var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);

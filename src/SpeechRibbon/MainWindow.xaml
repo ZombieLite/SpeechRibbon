@@ -233,7 +233,9 @@
           <TextBlock Text="Модель" FontWeight="SemiBold" Margin="0,0,0,7"/>
           <TextBox x:Name="ConnectionModel" Text="" Height="39"/>
           <TextBlock Text="Настройки сохраняются в файле рядом с программой.&#x0a;В этой версии ключ хранится в файле без шифрования." TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,18,0,18"/>
-          <TextBlock x:Name="ConnectionStatus" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,12"/>
+          <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+            <TextBox x:Name="ConnectionStatus" TextWrapping="Wrap" IsReadOnly="True" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource MutedBrush}"/>
+          </ScrollViewer>
           <Grid>
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <Button x:Name="TestConnectionButton" Content="Проверить подключение" HorizontalAlignment="Left" Click="TestConnection_Click"/>
