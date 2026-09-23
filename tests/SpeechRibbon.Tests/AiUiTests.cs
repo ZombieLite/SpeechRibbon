@@ -51,7 +51,7 @@ internal static class AiUiTests
                 check(Control<Grid>("PromptEditor").Visibility == Visibility.Collapsed && Control<ScrollViewer>("AnswerScroller").Visibility == Visibility.Visible, "UI answer uses editor area");
                 Call("EditPrompt_Click"); Control<TextBox>("PromptBox").Text = "Новый промпт";
                 Call("CollapsePrompt_Click");
-                check(Control<TextBlock>("AnswerText").Text == "Сохранённый ответ" && Control<TextBox>("PromptBox").Text == "Новый промпт", "UI returning preserves prompt and answer");
+                check(new System.Windows.Documents.TextRange(Control<TextBlock>("AnswerText").ContentStart, Control<TextBlock>("AnswerText").ContentEnd).Text == "Сохранённый ответ" && Control<TextBox>("PromptBox").Text == "Новый промпт", "UI returning preserves prompt and answer");
                 window.Width = window.MinWidth; window.Height = window.MinHeight;
                 var root = (FrameworkElement)window.Content;
                 root.Measure(new Size(window.MinWidth, window.MinHeight)); root.Arrange(new Rect(0, 0, window.MinWidth, window.MinHeight)); root.UpdateLayout();
@@ -79,12 +79,12 @@ internal static class AiUiTests
                 Call("InvalidateAiDocument"); Set("_document", new TranscriptDocument());
                 handler.Response.SetResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"choices\":[{\"message\":{\"content\":\"Late answer\"}}]}") });
                 Pump();
-                check(Control<TextBlock>("AnswerText").Text == "", "UI late answer does not attach to another document");
+                check(new System.Windows.Documents.TextRange(Control<TextBlock>("AnswerText").ContentStart, Control<TextBlock>("AnswerText").ContentEnd).Text == "", "UI late answer does not attach to another document");
                 Set("_document", doc); Set("_aiAnswer", "Previous answer"); Call("RenderAi");
                 handler.Response = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 Call("SendPrompt_Click"); Call("CancelAi_Click");
                 handler.Response.SetCanceled(); Pump();
-                check(Control<TextBlock>("AnswerText").Text == "Previous answer" && Control<TextBox>("PromptBox").Text == "Новый промпт", "UI cancellation preserves previous answer and prompt");
+                check(new System.Windows.Documents.TextRange(Control<TextBlock>("AnswerText").ContentStart, Control<TextBlock>("AnswerText").ContentEnd).Text == "Previous answer" && Control<TextBox>("PromptBox").Text == "Новый промпт", "UI cancellation preserves previous answer and prompt");
                 window.Close();
             }
             catch (Exception e) { failure = e; }

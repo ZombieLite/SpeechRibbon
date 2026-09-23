@@ -32,11 +32,14 @@ internal static class WindowsTheme
         Set(resources, "InkBrush", isLight ? "#142238" : "#F2F4F7");
         Set(resources, "MutedBrush", isLight ? "#64748B" : "#AAB2C0");
         Set(resources, "BorderBrush", isLight ? "#CBD5E1" : "#4B5563");
-        resources["AccentBrush"] = new SolidColorBrush(accent);
-        resources["AccentTextBrush"] = new SolidColorBrush(accentText);
+        resources["AccentBrush"] = new SolidColorBrush(isLight ? accent : (Color)ColorConverter.ConvertFromString("#424852"));
+        resources["AccentTextBrush"] = new SolidColorBrush(isLight ? accentText : Colors.White);
         Set(resources, "CurrentStatusBrush", isLight ? "#DCFCE7" : "#143C2A");
         Set(resources, "CurrentStatusTextBrush", isLight ? "#166534" : "#86EFAC");
         Set(resources, "WindowButtonHoverBrush", isLight ? "#E8EDF3" : "#343840");
+        Set(resources, "ChoiceHoverBrush", isLight ? "#F4F7FC" : "#30343B");
+        Set(resources, "SelectionBrush", isLight ? "#E8F0FF" : "#383D46");
+        Set(resources, "SelectionTextBrush", isLight ? "#245AC7" : "#F2F4F7");
         Set(resources, "ScrollThumbBrush", isLight ? "#94A3B8" : "#64748B");
         Set(resources, "ScrollThumbHoverBrush", isLight ? "#64748B" : "#94A3B8");
     }

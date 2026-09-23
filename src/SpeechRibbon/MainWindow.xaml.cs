@@ -91,6 +91,7 @@ public partial class MainWindow : Window
 
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
+        if (_isBusy || AiTab.IsChecked == true) return;
         if (_media is null || TrackBox.SelectedItem is not AudioTrack track) return;
         InvalidateAiDocument();
         _workCancellation = new CancellationTokenSource();
@@ -211,3 +212,6 @@ public partial class MainWindow : Window
         if (!e.Cancel) { InvalidateAiRequest(); _probeCancellation?.Cancel(); _aiClient.Dispose(); }
     }
 }
+
+
+

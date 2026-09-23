@@ -20,8 +20,8 @@
                 <Grid Margin="12,0"><Path HorizontalAlignment="Right" VerticalAlignment="Center" Data="M 0 0 L 4 4 L 8 0" Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.5"/></Grid>
               </Border>
               <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ChoiceBorder" Property="Background" Value="#F4F7FC"/></Trigger>
-                <Trigger Property="IsChecked" Value="True"><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="#6488F7"/></Trigger>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ChoiceBorder" Property="Background" Value="{DynamicResource ChoiceHoverBrush}"/></Trigger>
+                <Trigger Property="IsChecked" Value="True"><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource SelectionTextBrush}"/></Trigger>
               </ControlTemplate.Triggers>
             </ControlTemplate></ToggleButton.Template>
           </ToggleButton>
@@ -35,11 +35,12 @@
         <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
       <Setter Property="ItemContainerStyle"><Setter.Value><Style TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource InkBrush}"/>
         <Setter Property="Padding" Value="10,9"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem">
           <Border x:Name="ItemBorder" Background="Transparent" CornerRadius="4" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border>
           <ControlTemplate.Triggers>
-            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="#E8F0FF"/></Trigger>
-            <Trigger Property="IsSelected" Value="True"><Setter Property="Foreground" Value="#245AC7"/></Trigger>
+            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource SelectionBrush}"/></Trigger>
+            <Trigger Property="IsSelected" Value="True"><Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}"/></Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate></Setter.Value></Setter>
       </Style></Setter.Value></Setter>
@@ -52,7 +53,7 @@
           <ContentPresenter/>
         </Border>
         <ControlTemplate.Triggers>
-          <Trigger Property="IsChecked" Value="True"><Setter Property="Foreground" Value="#245AC7"/><Setter TargetName="TabBorder" Property="Background" Value="#E8F0FF"/></Trigger>
+          <Trigger Property="IsChecked" Value="True"><Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}"/><Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource SelectionBrush}"/></Trigger>
           <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="TabBorder" Property="Background" Value="#D8E7FF"/></Trigger>
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
@@ -125,8 +126,10 @@
               <TextBlock x:Name="StatusDetail" Foreground="{DynamicResource MutedBrush}" FontSize="13" Margin="0,5,0,0" Text="Обрабатывается только один файл за раз."/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-              <Button x:Name="StartButton" Content="Начать" Click="Start_Click" IsEnabled="False" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0"/>
+              <Button x:Name="StartButton" Content="Начать" Click="Start_Click" IsEnabled="False" Margin="0,0,8,0"/>
               <Button x:Name="CancelButton" Content="Отменить" Click="Cancel_Click" IsEnabled="False"/>
+              <Button x:Name="SendPromptButton" Content="Отправить" Click="SendPrompt_Click" Style="{StaticResource PrimaryButtonStyle}" Visibility="Collapsed"/>
+              <Button x:Name="CancelAiButton" Content="Отменить" Click="CancelAi_Click" Margin="8,0,0,0" Visibility="Collapsed"/>
             </StackPanel>
           </Grid>
           <ProgressBar x:Name="WorkProgress" Grid.Row="1" Margin="0,14" Minimum="0" Maximum="100"/>
@@ -195,10 +198,8 @@
                   <TextBlock x:Name="AiStatusText" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"/>
                 </Grid>
                 <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
-                  <Button x:Name="SendPromptButton" Content="Отправить" Click="SendPrompt_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                   <Button x:Name="EditPromptButton" Content="Изменить промпт" Click="EditPrompt_Click" Visibility="Collapsed"/>
                   <Button x:Name="CollapsePromptButton" Content="Вернуться к ответу" Click="CollapsePrompt_Click" Margin="8,0,0,0" Visibility="Collapsed"/>
-                  <Button x:Name="CancelAiButton" Content="Отменить" Click="CancelAi_Click" Margin="8,0,0,0" Visibility="Collapsed"/>
                 </StackPanel>
               </Grid>
             </Grid>
@@ -211,9 +212,6 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
           <TextBlock Text="Версия " Foreground="{DynamicResource MutedBrush}" FontSize="13" VerticalAlignment="Center"/>
           <TextBlock x:Name="VersionText" Foreground="{DynamicResource MutedBrush}" FontSize="13" VerticalAlignment="Center"/>
-          <Border Background="{DynamicResource CurrentStatusBrush}" BorderThickness="0" CornerRadius="11" Height="22" Padding="9,0" Margin="10,0,0,0" VerticalAlignment="Center">
-            <TextBlock Text="Актуальная" Foreground="{DynamicResource CurrentStatusTextBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-          </Border>
         </StackPanel>
       </Grid>
     </Grid>
@@ -227,7 +225,7 @@
           <TextBlock Text="Адрес API твоего сервера" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,6,0,18"/>
           <TextBlock Text="API Key" FontWeight="SemiBold" Margin="0,0,0,7"/>
           <Border Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6">
-            <PasswordBox x:Name="ConnectionKey" PasswordChar="*" Height="39" Padding="11,8" Background="Transparent" BorderThickness="0" FontSize="14"/>
+            <PasswordBox x:Name="ConnectionKey" PasswordChar="*" Height="39" Padding="11,0" VerticalContentAlignment="Center" Background="Transparent" Foreground="{DynamicResource InkBrush}" CaretBrush="{DynamicResource InkBrush}" SelectionBrush="{DynamicResource SelectionBrush}" BorderThickness="0" FontSize="13"/>
           </Border>
           <TextBlock Text="Ключ скрыт на экране" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,6,0,18"/>
           <TextBlock Text="Модель" FontWeight="SemiBold" Margin="0,0,0,7"/>
@@ -249,3 +247,15 @@
     </Grid>
   </Grid>
 </Window>
+
+
+
+
+
+
+
+
+
+
+
+

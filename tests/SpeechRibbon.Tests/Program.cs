@@ -397,3 +397,4 @@ static void WriteRepeatedPcmFixture(string sourcePath, string destinationPath, i
         written += count;
     }
 }
+

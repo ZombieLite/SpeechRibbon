@@ -16,6 +16,9 @@
     <SolidColorBrush x:Key="CurrentStatusBrush" Color="#DCFCE7" />
     <SolidColorBrush x:Key="CurrentStatusTextBrush" Color="#166534" />
     <SolidColorBrush x:Key="WindowButtonHoverBrush" Color="#E8EDF3" />
+    <SolidColorBrush x:Key="ChoiceHoverBrush" Color="#F4F7FC" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#E8F0FF" />
+    <SolidColorBrush x:Key="SelectionTextBrush" Color="#245AC7" />
     <SolidColorBrush x:Key="ScrollThumbBrush" Color="#94A3B8" />
     <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#64748B" />
 
@@ -116,6 +119,8 @@
     </Style>
 
     <Style TargetType="TextBox">
+      <Setter Property="CaretBrush" Value="{DynamicResource InkBrush}" />
+      <Setter Property="SelectionBrush" Value="{DynamicResource SelectionBrush}" />
       <Setter Property="Padding" Value="11,0" />
       <Setter Property="MinHeight" Value="39" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -278,3 +283,5 @@
     </Style>
   </Application.Resources>
 </Application>
+
+
