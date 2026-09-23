@@ -11,6 +11,22 @@ internal static class AiTests
         await Loopback(check);
         await TlsLoopback(check);
         var settings = new AiSettings { BaseUrl = "https://example.invalid/v1", ApiKey = "synthetic-secret", Model = "test-model" };
+        // Reproduce a provider whose omitted output budget consumes the whole context.
+        var contextHandler = new Handler(async (request, token) => {
+            using var payload = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(token));
+            var budget = payload.RootElement.TryGetProperty("max_tokens", out var value) ? value.GetInt32() : 262144;
+            return budget + 100 > 262144
+                ? new HttpResponseMessage(HttpStatusCode.BadRequest) { Content = new StringContent("{\"error\":{\"message\":\"Output reservation leaves no room for input\"}}") }
+                : Json("{\"choices\":[{\"message\":{\"content\":\"Accepted\"}}]}");
+        });
+        using (var oldRequest = new HttpClient(contextHandler, disposeHandler: false))
+        using (var response = await oldRequest.PostAsync(settings.Endpoint(), new StringContent("{\"model\":\"test-model\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}")))
+            check(response.StatusCode == HttpStatusCode.BadRequest, "AI regression reproduces full-context default rejection");
+        using (var fixedClient = new AiClient(contextHandler))
+        {
+            check(await fixedClient.CompleteAsync(settings, "", "", default, true) == "Accepted", "AI probe succeeds against full-context default provider");
+            check(await fixedClient.CompleteAsync(settings, "Summarize", "Short transcript", default) == "Accepted", "AI processing succeeds against full-context default provider");
+        }
         check(settings.Endpoint().AbsoluteUri == "https://example.invalid/v1/chat/completions", "AI base URL preserves v1 without duplication");
         settings.BaseUrl = "https://example.invalid";
         check(settings.Endpoint().AbsolutePath == "/v1/chat/completions", "AI root URL defaults to v1");
@@ -45,6 +61,7 @@ internal static class AiTests
             var input = json.RootElement.GetProperty("messages")[1].GetProperty("content").GetString()!;
             check(input.EndsWith(longText) && input.StartsWith("Задание"), "AI full transcript and prompt sent without truncation");
             check(json.RootElement.GetProperty("model").GetString() == "test-model" && !json.RootElement.GetProperty("stream").GetBoolean(), "AI configured model and nonstream response");
+            check(json.RootElement.GetProperty("max_tokens").GetInt32() == 8192, "AI output has an explicit budget while full input is preserved");
             return Json("{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"Сводка\"}}]}");
         }))) check(await client.CompleteAsync(settings, "Задание", longText, default) == "Сводка", "AI parses successful response");
         foreach (var code in new[] { 400, 401, 403, 404, 413, 429, 500, 302 })
@@ -68,6 +85,8 @@ internal static class AiTests
         using (var client = new AiClient(new Handler(async (r, t) => {
             var input = await r.Content!.ReadAsStringAsync(t);
             check(!input.Contains("PRIVATE_TRANSCRIPT"), "AI connection test does not send transcript");
+            using var json = JsonDocument.Parse(input);
+            check(json.RootElement.GetProperty("max_tokens").GetInt32() == 512, "AI probe reserves only a small output budget");
             return Json("{\"choices\":[{\"message\":{\"content\":\"готово\"}}]}");
         }))) await client.CompleteAsync(settings, "private prompt", "PRIVATE_TRANSCRIPT", default, true);
         var folder = Path.Combine(Path.GetTempPath(), "speechribbon-ai-tests-" + Guid.NewGuid().ToString("N"));
